@@ -1,0 +1,5 @@
+Take any three points and consider them to be the triangle vertices.
+Check if that choice is valid or not by checking if the integer points contained in the triangle are voxels
+If they form valid triangle then mark these points as visited 
+Repeat step 1 ,2 ,3 until all the voxels are covered.
+
