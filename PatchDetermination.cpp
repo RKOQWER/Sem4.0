@@ -8,6 +8,22 @@ using std::ifstream;
 using std::ofstream;
 #include <cstdlib> 
 
+
+struct point2D
+{
+   long long x,y;
+ 
+};
+ 
+   bool operator<(const point2D& lhs, const point2D& rhs)
+{
+   if(lhs.x!=rhs.x)
+     return   lhs.x < rhs.x;
+   else
+      return lhs.y<rhs.y;
+}
+ 
+
 struct planeinfo 
 {
    // It contains info about plane
@@ -53,7 +69,7 @@ struct info
    }
 };
 bool digital_line(point a,point b,point c);
-void bfs(vector<point> &p,info& f,ofstream &outdata);
+void bfs(vector<point> &p,info& f,ofstream &outdata,planeinfo &l);
 vector<point> neighbors(int x,int y,int z);
 info functional_plane(vector<point> &p);
 
@@ -70,11 +86,14 @@ void dst(vector<pair<int,int> > &v1,vector<pair<int,int> > &v2,
 void input(point a,point b,point c,ifstream &in);
 void scaling();
 void patch();
-
+bool is_plane(point p,planeinfo x);
 void plane_work(vector<pair<int,int> > &e,int A,int B,int C,int D,int flag);
 void visualisation(vector<point> &arr,ofstream &outdata);
-
-
+void visualisation(ofstream &outdata);
+set<point2D> solve(vector<point2D>&arr,int n);
+bool acw(point2D a,point2D b,point2D c);
+bool cw(point2D a,point2D b,point2D c);
+void linear(set<pair<int,int> >&xy,int f,ofstream &outdata,vector<point>&brr);
 int x_l=INT_MAX;
 int y_l=INT_MAX;
 int z_l=INT_MAX;
@@ -83,15 +102,202 @@ int y_m=INT_MIN;
 int z_m=INT_MIN;
 int line=1;
 bool ***ptr;
+bool ***vis;
 
+void visualisation(ofstream& outdata)
+{
+   for(int i=0;i<=x_m-x_l;i++)
+      {
+         for(int j=0;j<=y_m-y_l;j++)
+         {
+            for(int k=0;k<=z_m-z_l;k++)
+            {
+               int x,y,z;
+               x=i;
+               y=j;
+               z=k;
+               float p=0.5;
+               if(ptr[x][y][z])
+               {
+                  //outdata<<"usemtl red\n";
+                  outdata<<"usemtl white\n";
+                  outdata<<"v "<<x -p<<" "<<y-p<<" "<<z-p<<"\n";
+                  outdata<<"v "<<x -p<<" "<<y-p<<" "<<z+p<<"\n";
+                  outdata<<"v "<<x -p<<" "<<y+p<<" "<<z-p<<"\n";
+                  outdata<<"v "<<x -p<<" "<<y+p<<" "<<z+p<<"\n";
+                  outdata<<"v "<<x +p<<" "<<y-p<<" "<<z-p<<"\n";
+                  outdata<<"v "<<x +p<<" "<<y-p<<" "<<z+p<<"\n";
+                  outdata<<"v "<<x +p<<" "<<y+p<<" "<<z-p<<"\n";
+                  outdata<<"v "<<x +p<<" "<<y+p<<" "<<z+p<<"\n";
+                  outdata<<"f "<<line+7<<" "<<line+5<<" "<<line+4<<" "<<line+6<<"\n";
+                  outdata<<"f "<<line+2<<" "<<line+3<<" "<<line+7<<" "<<line+6<<"\n";
+                  outdata<<"f "<<line+0<<" "<<line+1<<" "<<line+3<<" "<<line+2<<"\n";
+                  outdata<<"f "<<line+5<<" "<<line+1<<" "<<line+0<<" "<<line+4<<"\n";
+                  outdata<<"f "<<line+0<<" "<<line+2<<" "<<line+6<<" "<<line+4<<"\n";
+                  outdata<<"f "<<line+5<<" "<<line+7<<" "<<line+3<<" "<<line+1<<"\n";
+                  line+=8;
+               }
+               
+            }
+         }
+      }
+}
+void linear(set<pair<int,int> >&xy,int f,ofstream &outdata,vector<point>& brr)
+{
+   int n=xy.size();
+   vector<point2D> arr;
+   map<pair<int,int>,int> x;
+   map<pair<int,int>,int> y;
+   map<pair<int,int>,int> z;
+   for(auto &w:brr)
+   {
+      int a=w.x;
+      int b=w.y;
+      int c=w.z;
+      x.insert({{b,c},a});
+      y.insert({{c,a},b});
+      z.insert({{a,b},c});
+   }
+   for(auto it=xy.begin();it!=xy.end();it++)
+   {
+      point2D p;
+      p.x=it->first;
+      p.y=it->second;
+      arr.push_back(p);
+   }
+   vector<point> p;
+   set<point2D> st=solve(arr,n);
+   if(f==0)
+   {// xy
+      // find z
+      for(auto it=st.begin();it!=st.end();it++)
+      {
+         int a=it->x;
+         int b=it->y;
+         int c=z[{a,b}];
+         point l;
+         l.x=a;
+         l.y=b;
+         l.z=c;
+         p.push_back(l);
+      }
+   }
+   else if(f==1)
+   {
+      // yz
+      // find x
+      for(auto it=st.begin();it!=st.end();it++)
+      {
+         
+         int a=it->x;
+         int b=it->y;
+         int c=x[{a,b}];
+         point l;
+         l.x=c;
+         l.y=a;
+         l.z=b;
+         p.push_back(l);
+      }
+   }
+   else
+   {
+      // find y
+      for(auto it=st.begin();it!=st.end();it++)
+      {
+         int a=it->x;//z
+         int b=it->y;// x
+         int c=y[{a,b}];//y
+         point l;
+         l.x=b;
+         l.y=c;
+         l.z=a;
+         p.push_back(l);
+      }
+   }
+   //cout<<p.size()<<"\n";
+   visualisation(p,outdata);
+}
+
+bool acw(point2D a,point2D b,point2D c)
+{
+   long long p=(c.y-a.y)*(b.x-a.x)-(b.y-a.y)*(c.x-a.x);
+   return p>0;
+}
+ 
+bool cw(point2D a,point2D b,point2D c)
+{
+   long long p=(c.y-a.y)*(b.x-a.x)-(b.y-a.y)*(c.x-a.x);
+   return p<0;
+}
+ 
+bool f(point2D a,point2D b)
+{
+   if(a.x<b.x)
+      return true;
+   else if(a.x>b.x)
+      return false;
+   else
+      return (a.y<b.y);
+}
+set<point2D> solve(vector<point2D> &arr,int n)
+{
+   //sort(arr.begin(),arr.end(),f);
+   point2D p1=arr[0];
+   point2D p2=arr[n-1];
+   int i;
+   vector<point2D> up;
+   vector<point2D> down;
+   up.push_back(p1);
+   down.push_back(p1);
+   for(i=1;i<n;i++)
+   {
+      if(i==n-1 || !acw(p1,arr[i],p2))
+      {
+         while(up.size()>=2 && acw(up[up.size()-2],up[up.size()-1],arr[i]))
+         {
+            up.pop_back();
+         }
+         up.push_back(arr[i]);
+      }
+      if(i==n-1 || !cw(p1,arr[i],p2))
+      {
+         while(down.size()>=2 && cw(down[down.size()-2],down[
+            down.size()-1],arr[i]))
+         {
+            down.pop_back();
+         }
+         down.push_back(arr[i]);
+      }
+   }
+   set<point2D> st;
+   for(auto &e:up)
+      st.insert(e);
+   for(auto &e:down)
+      st.insert(e);
+   //cout<<st.size()<<"\n";
+   return st;
+}
+
+bool is_plane(point p,planeinfo x)
+{
+   int a=x.A;
+   int b=x.B; 
+   int c=x.C;
+   int d=x.D;
+   int z=p.x*a+p.y*b+p.z*c+d;
+   return (z>=-1 && z<=1);
+}
 void visualisation(vector<point> &arr,ofstream &outdata)
 {
+   outdata<<"usemtl red\n";
    for(point &w:arr)
    {
       int x,y,z;
       x=w.x;
       y=w.y;
       z=w.z;
+      //cout<<"Voxels \n";
+      //cout<<x<<" "<<y<<" "<<z<<"\n";
       float p=0.5;
       outdata<<"v "<<x -p<<" "<<y-p<<" "<<z-p<<"\n";
       outdata<<"v "<<x -p<<" "<<y-p<<" "<<z+p<<"\n";
@@ -113,12 +319,12 @@ void visualisation(vector<point> &arr,ofstream &outdata)
 void patch()
 {
    ofstream outdata;
-   outdata.open("cube_planar.obj"); // opens the file
+   outdata.open("t_planar.obj"); // opens the file
    if( !outdata ) { // file couldn't be opened
       cerr << "Error: file could not be opened" << endl;
       exit(1);
    }
-   
+   outdata<<"mtllib color.mtl\n";
    int i,j,k;
    for(i=0;i<x_m-x_l+1;i++)
    {
@@ -126,18 +332,20 @@ void patch()
       {
          for(k=0;k<z_m-z_l+1;k++)
          {
-            if(ptr[i][j][k])
+            if(ptr[i][j][k]&& !vis[i][j][k])
             {
                vector<point> p=neighbors(i,j,k);
+               if(p.size()<3)
+                  continue;
+               planeinfo w=get_plane(p[0],p[1],p[2]);
                info f=functional_plane(p);
                //cout<<f.f1<<" "<<f.f2<<" "<<f.f3<<"\n";
-               bfs(p,f,outdata);
-               outdata.close();
-               return ;
+               bfs(p,f,outdata,w);
             }
          }
       }
    }
+   visualisation(outdata);
    outdata.close();
 }
 bool validate(point w,set<pair<int,int> >&xy,set<pair<int,int> >&yz,
@@ -163,24 +371,17 @@ bool validate(point w,set<pair<int,int> >&xy,set<pair<int,int> >&yz,
       return false;
 }
 
-void bfs(vector<point> &p,info& qu,ofstream &outdata)
+void bfs(vector<point> &p,info& qu,ofstream &outdata,planeinfo &l)
 {
    queue<point> q;
    vector<point> arr;
    int c=0;
-   bool vis[x_m-x_l][y_m-y_l][z_m-z_l];
+   //bool vis[x_m-x_l][y_m-y_l][z_m-z_l];
    int i,j,k;
    set<pair<int,int> >xy;
    set<pair<int,int> >yz;
    set<pair<int,int> >zx;
-   for(i=0;i<=x_m-x_l;i++)
-   {
-      for(j=0;j<=y_m-y_l;j++)
-      {
-         for(k=0;k<=z_m-z_l;k++)
-            vis[i][j][k]=false;
-      }
-   }
+   
    for(point &w:p)
    {
       vis[w.x][w.y][w.z]=true;
@@ -194,7 +395,7 @@ void bfs(vector<point> &p,info& qu,ofstream &outdata)
    
    while(!q.empty())
    {
-       int sz=q.size();
+      int sz=q.size();
       while(sz--)
       {
          point f=q.front();
@@ -205,14 +406,15 @@ void bfs(vector<point> &p,info& qu,ofstream &outdata)
             {
                for(k=-1;k<=1;k++)
                {
-                  if(f.x+i>=0 && f.x+i<=10 
-                  && f.y+j>=0 && f.y+j<=10 && f.z+k>=0 && f.z+k<=10
-                  && ptr[f.x+i][f.y+j][f.z+k] && !vis[f.x+i][f.y+j][f.z+k])
+                  point w;
+                  w.x=f.x+i;
+                  w.y=f.y+j;
+                  w.z=f.z+k;
+                  if(f.x+i>=0 && f.x+i<=x_m-x_l
+                  && f.y+j>=0 && f.y+j<=y_m-y_l && f.z+k>=0 && f.z+k<=z_m-z_l
+                  && ptr[f.x+i][f.y+j][f.z+k] && !vis[f.x+i][f.y+j][f.z+k] && is_plane(w,l))
                   {
-                     point w;
-                     w.x=f.x+i;
-                     w.y=f.y+j;
-                     w.z=f.z+k;
+                     
                      vis[w.x][w.y][w.z]=true;
                      if(validate(w,xy,yz,zx,qu))
                      {
@@ -233,8 +435,14 @@ void bfs(vector<point> &p,info& qu,ofstream &outdata)
          }
       }
    }
-   visualisation(arr,outdata);
-   cout<<c<<"\n";
+   if(qu.f1==1)
+      linear(xy,0,outdata,arr);
+   else if(qu.f2==1)
+      linear(yz,1,outdata,arr);
+   else
+      linear(zx,2,outdata,arr);
+   //visualisation(arr,outdata);
+   //cout<<c<<"\n";
 }
 info functional_plane(vector<point> &p)
 {
@@ -271,8 +479,8 @@ vector<point> neighbors(int x,int y,int z)
       {
          for(k=-1;k<=1;k++)
          {
-            if(x+i>=0 && x+i<=10 && y+j>=0 && y+j<=10 && z+k>=0 
-               && z+k<=10 && ptr[x+i][y+j][z+k] )
+            if(x+i>=0 && x+i<=x_m-x_l && y+j>=0 && y+j<=y_m-y_l && z+k>=0 
+               && z+k<=z_m-z_l && ptr[x+i][y+j][z+k] )
             {
                point w;
                w.x=x+i;
@@ -897,7 +1105,7 @@ void input(point a,point b,point c,ifstream &in)
        if(abs(p.C )>= abs(p.B )&&abs(p.C)>=abs(p.A)) flag = 0;// xy is functional plane
        else if(abs(p.A)>=abs(p.B) && abs(p.A)>=abs(p.C)) flag = 1;// yz is functional plane
        else flag = 2;// zx is functional plane
-       cout<<"Plane "<<flag<<"\n";
+      // cout<<"Plane "<<flag<<"\n";
        vector<pair<int,int>> pixels=coordinates(a,b,c,flag,p);
        voxelization(pixels,p.A,p.B,p.C,p.D,flag);
        pixels.clear();
@@ -909,13 +1117,13 @@ void input(point a,point b,point c,ifstream &in)
 void scaling()
 {
       ifstream in;  
-      in.open("cube.obj"); // taking input of vertices and faces from the orignal.obj file and scaling it
+      in.open("t.obj"); // taking input of vertices and faces from the orignal.obj file and scaling it
       if(!in) { 
          cerr << "Error: file could not be opened" << endl;
          exit(1);
       }
    ofstream out;
-   out.open("mcube.obj"); // Storing the scaled version of orignal .obj file in this file
+   out.open("mt.obj"); // Storing the scaled version of orignal .obj file in this file
    if( !out) { // file couldn't be opened
       cerr << "Error: file could not be opened" << endl;
       exit(1);
@@ -957,25 +1165,25 @@ int main()
 {
     scaling();
     ptr=new bool**[x_m-x_l+1];
-   
+    vis=new bool**[x_m-x_l+1];
     int i,j,k;
     for(i=0;i<=x_m-x_l;i++)
     {
       ptr[i]=new bool*[y_m-y_l+1];
-     
+      vis[i]=new bool*[y_m-y_l+1];
       for(j=0;j<=y_m-y_l;j++)
       {
          ptr[i][j]=new bool[z_m-z_l+1];
-         
+         vis[i][j]=new bool[z_m-z_l+1];
          for(k=0;k<=z_m-z_l;k++)
          {
             ptr[i][j][k]=false;
-           
+            vis[i][j][k]=false;
          }
       }
     }
     ifstream in;  
-      in.open("mcube.obj"); 
+      in.open("mt.obj"); 
       if(!in) { 
          cerr << "Error: file could not be opened" << endl;
          exit(1);
@@ -1010,6 +1218,7 @@ int main()
          
    }
    in.close();
+   
    patch();
 
    return 0;
