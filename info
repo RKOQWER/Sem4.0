@@ -1,0 +1,37 @@
+To partition a set of integer points in a 3D plane that are digitally planar into a set of digitally planar triangles of maximum size, we can use a variant of the ear-clipping algorithm.
+
+The ear-clipping algorithm is a popular method for triangulating a 2D polygon. The idea is to iteratively find and remove "ears" - triangles formed by three consecutive vertices that do not contain any other vertices of the polygon. This process continues until no ears remain, resulting in a triangulation of the polygon.
+
+For a set of integer points in a 3D plane that are digitally planar, we can first project them onto a 2D plane using a suitable projection method, such as orthogonal projection. Once we have a planar projection of the points, we can apply the ear-clipping algorithm to triangulate the projected points.
+
+To ensure that the resulting triangles are digitally planar, we need to ensure that the vertices of the triangles lie on a regular grid or lattice. One way to do this is to round the coordinates of the projected points to the nearest integer values. This will ensure that the vertices of the resulting triangles lie on a regular grid.
+
+To maximize the size of the triangles, we can use a heuristic that selects the largest possible ear at each step of the algorithm. This can be done by computing the area of each possible ear and selecting the ear with the largest area.
+
+Here's a pseudocode for the algorithm:
+
+sql
+Copy code
+Input: 
+- A set of integer points in a 3D plane that are digitally planar
+
+Output: 
+- A set of digitally planar triangles of maximum size that partition the input set
+
+1. Project the points onto a 2D plane using a suitable projection method
+
+2. Round the coordinates of the projected points to the nearest integer values
+
+3. Initialize an empty list of triangles
+
+4. While the set of points is not empty:
+   a. Find the largest possible ear in the set of points
+   b. Remove the ear from the set of points
+   c. Add the ear as a triangle to the list of triangles
+
+5. Return the list of triangles
+
+Note that the above pseudocode provides a high-level overview of the algorithm and does not include implementation details such as the choice of projection method, data structures, and coordinate rounding method. The implementation details will depend on the specific context and requirements of the problem.
+
+
+
